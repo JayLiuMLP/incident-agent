@@ -34,6 +34,45 @@ The goal is to help you maintain a big picture as well as the progress of the ta
 - Always use `uv run python` instead of direct python execution to ensure proper virtual environment activation
 - uv provides faster dependency resolution and better dependency management compared to pip
 
+## Context Engineering Rules
+
+### Project Awareness
+- Always read `PLANNING.md` at conversation start to understand architecture, goals, and constraints
+- Check `TASK.md` before starting new tasks; add tasks if not listed with brief description and date
+- Use consistent naming conventions and file structure patterns as described in project docs
+
+### Code Structure & Modularity
+- Never create files longer than 500 lines; refactor by splitting into modules
+- Organize code into clearly separated modules by feature/responsibility:
+  - `agent.py` - Main agent definition and logic
+  - `tools.py` - Tool functions
+  - `prompts.py` - System prompts
+- Use clear, consistent imports (prefer relative imports within packages)
+- Use `python_dotenv` and `load_env()` for environment variables
+
+### Testing & Reliability
+- Always create Pytest unit tests for new features (functions, classes, routes)
+- Tests should live in `/tests` folder mirroring main app structure
+- Include at least: 1 expected use test, 1 edge case, 1 failure case
+- Update existing tests when logic changes
+
+### Task Management
+- Mark completed tasks in `TASK.md` immediately after finishing
+- Add discovered sub-tasks to `TASK.md` under "Discovered During Work" section
+
+### Style & Documentation
+- Follow PEP8, use type hints, format with `black`
+- Use `pydantic` for data validation
+- Write Google-style docstrings for every function
+- Update `README.md` when features added, dependencies changed, or setup modified
+- Comment non-obvious code with `# Reason:` explaining why, not what
+
+### AI Behavior Guidelines
+- Never assume missing context; ask questions if uncertain
+- Never hallucinate libraries or functions; only use known, verified packages
+- Always confirm file paths and module names exist before referencing
+- Never delete/overwrite existing code unless explicitly instructed
+
 ## FastMCP Development Best Practices
 
 ### Project Setup and Environment
@@ -89,31 +128,39 @@ The goal is to help you maintain a big picture as well as the progress of the ta
 
 # Scratchpad
 
-## Current Task: Deploy to GitHub - COMPLETED
+## Current Task: 创建简单的 Hello World MCP 服务器
 
-### Task Description
-Successfully created GitHub repository and pushed the FastMCP project to remote.
+### 任务说明
+基于现有的 src/incident_agent/ 目录结构创建一个最简单的 hello world MCP 服务器，使用 FastMCP 框架。
 
-### What was accomplished:
-[X] Created GitHub repository: https://github.com/JayLiuMLP/incident-agent
-[X] Configured remote origin with proper URL
-[X] Renamed local branch from master to main for GitHub compatibility
-[X] Pushed all commits to remote repository
-[X] Updated README with correct clone URL (228414f)
-[X] Verified successful deployment
+### 计划步骤
+[X] 创建主要的服务器文件 src/incident_agent/server/server.py
+[X] 在 tools 目录中添加基本的 hello world 工具
+[X] 创建必要的 __init__.py 文件以支持模块导入  
+[X] 测试 MCP 服务器运行
 
-### Repository Information:
-- **GitHub URL**: https://github.com/JayLiuMLP/incident-agent
-- **Description**: A Python FastMCP server for incident management and analysis
-- **Branch**: main (renamed from master)
-- **Status**: Public repository, fully synced
+### 完成的工作
+- 创建了完整的 MCP 服务器结构
+- 实现了3个工具：hello, echo, server_info
+- 实现了1个资源：config://server/info
+- 所有文件都遵循 FastMCP 最佳实践
+- 通过 FastMCP CLI 验证了服务器配置
+- 创建了运行脚本和测试文件
 
-### Commits Pushed:
-- dac2155: docs: update task completion status for README setup
-- 1942167: docs: add project setup instructions to README
-- 768451c: docs: update project setup completion status in .cursorrules
-- e763668: feat: initial commit with FastMCP project setup
-- 228414f: docs: update repository URL in README clone instructions
+### 使用方法
+1. 使用 FastMCP CLI: `uv run fastmcp run main.py`
+2. 检查服务器: `uv run fastmcp inspect main.py`
+3. 运行演示: `uv run python run_server.py`
+4. HTTP 服务器: `uv run fastmcp run main.py --transport http --port 8000`
+5. Python 客户端连接: `uv run python simple_client.py`
 
-Project is now fully deployed and accessible on GitHub! 🚀
+### Python 客户端连接
+- 创建了完整的 Python HTTP 客户端连接解决方案
+- 端点: `http://localhost:8000/mcp` (注意没有尾部斜杠)
+- 使用 `StreamableHttpTransport` 进行连接
+- 提供了工具类封装和便捷函数
 
+### 项目结构分析
+- 已有的目录结构包括：server/, tools/, client/, resources/, utilities/ 等
+- 使用 FastMCP 框架 (版本 >= 2.12.4)
+- 使用 uv 管理依赖和虚拟环境
