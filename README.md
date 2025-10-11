@@ -10,17 +10,20 @@ A Python FastMCP (Model Context Protocol) server for incident management and ana
 ## Setup
 
 1. **Clone the repository**
+
    ```bash
-   git clone <your-repo-url>
+   git clone https://github.com/JayLiuMLP/incident-agent.git
    cd incident-agent
    ```
 
 2. **Install dependencies**
+
    ```bash
    uv sync
    ```
 
 3. **Verify installation**
+
    ```bash
    uv run python -c "import fastmcp; print('FastMCP installed successfully!')"
    ```
@@ -28,16 +31,19 @@ A Python FastMCP (Model Context Protocol) server for incident management and ana
 ## Development
 
 - **Run the application**
+
   ```bash
   uv run python main.py
   ```
 
 - **Run tests**
+
   ```bash
   uv run pytest
   ```
 
 - **Setup pre-commit hooks**
+
   ```bash
   uv run pre-commit install
   ```
