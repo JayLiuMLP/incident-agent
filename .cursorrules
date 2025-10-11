@@ -1,0 +1,109 @@
+# Instructions
+
+During you interaction with the user, if you find anything reusable in this project (e.g. version of a library, model name), especially about a fix to a mistake you made or a correction you received, you should take note in the `Lessons` section in the `.cursorrules` file so you will not make the same mistake again. 
+
+You should also use the `.cursorrules` file as a scratchpad to organize your thoughts. Especially when you receive a new task, you should first review the content of the scratchpad, clear old different task if necessary, first explain the task, and plan the steps you need to take to complete the task. You can use todo markers to indicate the progress, e.g.
+[X] Task 1
+[ ] Task 2
+Also update the progress of the task in the Scratchpad when you finish a subtask.
+Especially when you finished a milestone, it will help to improve your depth of task accomplishment to use the scratchpad to reflect and plan.
+The goal is to help you maintain a big picture as well as the progress of the task. Always refer to the Scratchpad when you plan the next step.
+
+# Lessons
+
+## User Specified Lessons
+
+- You are using uv to manage the Python virtual environment and dependencies.
+- Include info useful for debugging in the program output.
+- Read the file before you try to edit it.
+- Use LLM to perform flexible text understanding tasks. First test on a few files. After success, make it parallel.
+- In the same agent chat window, continue using the previously opened terminal window to maintain environment settings and working directory unless explicitly instructed otherwise
+- Always check if the current working directory is correct before performing any file operations:
+  - Use pwd command to confirm current location
+  - Use ls command to confirm target files exist
+  - Be especially careful when dealing with multiple files with similar names (like index.html and index_test.html)
+  - Ensure operating on the correct files in the correct paths before moving files or updating file contents
+
+## Cursor learned
+
+- For website image paths, always use the correct relative path (e.g., 'images/filename.png') and ensure the images directory exists
+- For search results, ensure proper handling of different character encodings (UTF-8) for international queries
+- Add debug information to stderr while keeping the main output clean in stdout for better pipeline integration
+- When using seaborn styles in matplotlib, use 'seaborn-v0_8' instead of 'seaborn' as the style name due to recent seaborn version changes
+- When using react-blog-github template, make sure to configure GitHub token and repository settings properly
+- Always use `uv run python` instead of direct python execution to ensure proper virtual environment activation
+- uv provides faster dependency resolution and better dependency management compared to pip
+
+## FastMCP Development Best Practices
+
+### Project Setup and Environment
+- Use `uv` for dependency management with `uv sync` to install all dependencies including dev tools
+- Set up pre-commit hooks with `uv run pre-commit install` for code quality control
+- Use `uv run pytest` for running comprehensive unit tests
+- Generate coverage reports with `pytest --cov=src --cov-report=html`
+
+### Code Structure and Patterns
+- Use FastMCP decorators for clean tool and resource definitions:
+  - `@mcp.tool()` for defining callable functions
+  - `@mcp.resource()` for defining accessible data endpoints
+- Implement async patterns for I/O operations using `async/await` syntax
+- Follow URI design conventions with hierarchical naming (e.g., `config://app/settings`, `data://catalog/products/{id}`)
+
+### Data Validation and Type Safety
+- Use Pydantic BaseModel for all data structures with proper type annotations
+- Implement strict parameter validation with Field constraints and regex patterns
+- Always provide comprehensive type hints for function parameters and return values
+- Example:
+  ```python
+  from pydantic import BaseModel, Field
+  
+  class Customer(BaseModel):
+      id: str
+      name: str
+      email: str = Field(..., regex=r'^\S+@\S+\.\S+$')
+      account_status: str = "active"
+  ```
+
+### Error Handling and Logging
+- Implement comprehensive error handling in all tool functions
+- Use FastMCP Context object for structured logging with `await ctx.info()`, `await ctx.warning()`, `await ctx.error()`
+- Log meaningful information for debugging while keeping main output clean
+- Example:
+  ```python
+  @mcp.tool()
+  async def safe_operation(data: str, ctx: Context):
+      try:
+          await ctx.info(f"Processing {data}")
+          # operation logic
+          return result
+      except Exception as e:
+          await ctx.error(f"Operation failed: {str(e)}")
+          return f"Error: {str(e)}"
+  ```
+
+### Testing and Quality Assurance
+- Write unit tests for every tool and resource function
+- Use FastMCP client library for integration testing
+- Run pre-commit hooks before every commit to ensure code quality
+- Test both sync and async code paths thoroughly
+
+# Scratchpad
+
+## Current Task: Set up uv virtual environment - COMPLETED
+
+### Task Description
+Successfully set up complete FastMCP project structure with uv virtual environment and dependencies.
+
+### What was accomplished:
+[X] Initialize project with `uv init` 
+[X] Create virtual environment with `uv venv`
+[X] Add FastMCP core dependency (v2.12.4)
+[X] Add development dependencies (pytest, pytest-cov, pre-commit)
+[X] Verify installation and Python version (3.13.5)
+
+### Project Structure:
+- `.venv/` - Virtual environment directory
+- `pyproject.toml` - Project configuration with dependencies
+- `uv.lock` - Dependency lock file
+- Ready for FastMCP development with all best practices applied
+
