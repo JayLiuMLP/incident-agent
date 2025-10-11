@@ -139,12 +139,12 @@ uv run python mcp_client_utils.py
 When running the test client, you should see:
 
 ```text
-🚀 MCP 客户端工具演示
-Hello: Hello, 开发者! 🌍 Welcome to the Incident Agent MCP Server!
-Echo: Echo: 这是一条测试消息
-服务器状态: running
-服务器版本: 0.1.0
-可用工具: ['hello', 'echo', 'server_info']
+🚀 MCP Client Tools Demo
+Hello: Hello, Developer! 🌍 Welcome to the Incident Agent MCP Server!
+Echo: Echo: This is a test message
+Server status: running
+Server version: 0.1.0
+Available tools: ['hello', 'echo', 'server_info']
 ```
 
 ## Development
@@ -201,12 +201,12 @@ Want to test the MCP server right away? Follow these steps:
 4. **Expected output**
 
    ```text
-   🚀 MCP 客户端工具演示
-   Hello: Hello, 开发者! 🌍 Welcome to the Incident Agent MCP Server!
-   Echo: Echo: 这是一条测试消息
-   服务器状态: running
-   服务器版本: 0.1.0
-   可用工具: ['hello', 'echo', 'server_info']
+   🚀 MCP Client Tools Demo
+   Hello: Hello, Developer! 🌍 Welcome to the Incident Agent MCP Server!
+   Echo: Echo: This is a test message
+   Server status: running
+   Server version: 0.1.0
+   Available tools: ['hello', 'echo', 'server_info']
    ```
 
 That's it! Your MCP server is working. 🎉
