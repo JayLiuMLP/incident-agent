@@ -1,89 +1,71 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Lightweight PagerDuty Client
+PagerDuty Client Implementation using Abstract Base Classes
 For MCP servers with singleton pattern support
 """
 
 import os
-import logging
 from typing import Any, Dict, List, Optional
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 
-import requests
-from dotenv import load_dotenv
-
-from ..auth.vault import get_default_vault, VaultKeys
-
-# Load environment variables
-load_dotenv()
+from ..base import BaseClientConfig, BaseAPIClient, ClientSingleton
+from ..auth.vault import VaultKeys
 
 # Constants
 PAGERDUTY_API_HOST = "https://api.pagerduty.com"
 
-# Configure logging
-logger = logging.getLogger('pagerduty_client')
-logger.setLevel(logging.INFO)
-if not logger.handlers:
-    handler = logging.StreamHandler()
-    formatter = logging.Formatter('%(name)s - %(levelname)s - %(message)s')
-    handler.setFormatter(formatter)
-    logger.addHandler(handler)
-
 
 @dataclass
-class PagerDutyConfig:
+class PagerDutyConfig(BaseClientConfig):
     """PagerDuty configuration class"""
+    
     api_host: str = PAGERDUTY_API_HOST
     api_key: Optional[str] = None
     default_services: List[str] = field(default_factory=lambda: ["ML Platform", "Model Development Platform"])
-    timeout: int = 30
     page_limit: int = 100
-
-    @classmethod
-    def from_vault(cls) -> 'PagerDutyConfig':
-        """Create configuration from local vault"""
-        vault = get_default_vault()
-        api_key = vault.get(VaultKeys.PAGERDUTY_TOKEN)
-        
-        if not api_key:
-            # If no token in vault, try to get from environment and store it
-            api_key = os.environ.get("PAGERDUTY_USER_API_KEY") or os.environ.get("PAGERDUTY_TOKEN")
-            if api_key:
-                vault.set(VaultKeys.PAGERDUTY_TOKEN, api_key)
+    
+    @property
+    def service_name(self) -> str:
+        return "PagerDuty"
+    
+    @property
+    def vault_token_key(self) -> str:
+        return VaultKeys.PAGERDUTY_TOKEN
+    
+    @property
+    def env_token_keys(self) -> List[str]:
+        return ["PAGERDUTY_USER_API_KEY", "PAGERDUTY_TOKEN"]
+    
+    def _set_token(self, token: Optional[str]):
+        self.api_key = token
+    
+    def _load_env_config(self):
+        super()._load_env_config()
         
         # Parse default services from environment
         service_names_env = os.environ.get("PD_SERVICE_NAMES", "")
         default_services = [name.strip() for name in service_names_env.split(",") if name.strip()]
-        if not default_services:
-            default_services = ["ML Platform", "Model Development Platform"]
+        if default_services:
+            self.default_services = default_services
         
-        return cls(
-            api_host=PAGERDUTY_API_HOST,
-            api_key=api_key,
-            default_services=default_services,
-            timeout=int(os.environ.get("PAGERDUTY_TIMEOUT", "30")),
-            page_limit=int(os.environ.get("PAGERDUTY_PAGE_LIMIT", "100"))
-        )
+        self.page_limit = int(os.environ.get("PAGERDUTY_PAGE_LIMIT", str(self.page_limit)))
 
 
-class PagerDutyClient:
-    """Lightweight PagerDuty client"""
+class PagerDutyClient(BaseAPIClient):
+    """PagerDuty client implementation using abstract base class"""
     
-    def __init__(self, config: Optional[PagerDutyConfig] = None):
-        self.config = config or PagerDutyConfig.from_vault()
-        self._validate_config()
-        
+    def _get_default_config(self) -> PagerDutyConfig:
+        return PagerDutyConfig.from_vault()
+    
     def _validate_config(self):
-        """Validate configuration"""
         if not self.config.api_host:
             raise ValueError("PagerDuty API host not configured")
         if not self.config.api_key:
             raise ValueError("PagerDuty API key not found. Please set it using: from src.incident_agent.client.auth import get_default_vault, VaultKeys; get_default_vault().set(VaultKeys.PAGERDUTY_TOKEN, 'your_token')")
     
     def _get_headers(self) -> Dict[str, str]:
-        """Get request headers"""
         return {
             "Authorization": f"Token token={self.config.api_key}",
             "Accept": "application/vnd.pagerduty+json;version=2",
@@ -91,31 +73,18 @@ class PagerDutyClient:
         }
     
     def _build_url(self, endpoint: str) -> str:
-        """Build API URL"""
         return f"{self.config.api_host.rstrip('/')}/{endpoint.lstrip('/')}"
     
-    def _request(self, endpoint: str, params: Optional[Dict] = None) -> Any:
-        """Send API request"""
-        url = self._build_url(endpoint)
-        headers = self._get_headers()
-        
+    def health_check(self) -> bool:
+        """Health check - verify API connectivity"""
         try:
-            logger.debug(f"Requesting PagerDuty API: {endpoint}")
-            
-            response = requests.get(
-                url, 
-                params=params, 
-                headers=headers,
-                timeout=self.config.timeout
-            )
-            
-            response.raise_for_status()
-            return response.json()
-            
-        except requests.exceptions.RequestException as e:
-            logger.error(f"PagerDuty API request failed: {e}")
-            raise
+            response_data = self._request("services", {"limit": 1})
+            return "services" in response_data
+        except Exception as e:
+            self.logger.error(f"Health check failed: {e}")
+            return False
     
+    # PagerDuty-specific helper methods
     def _paginated_request(self, endpoint: str, params: Optional[Dict] = None) -> List[Any]:
         """Send paginated API request"""
         all_items = []
@@ -154,6 +123,7 @@ class PagerDutyClient:
         
         return all_items
     
+    # PagerDuty-specific methods
     def get_service_id_by_name(self, service_name: str) -> Optional[str]:
         """Get service ID by exact service name"""
         try:
@@ -176,7 +146,7 @@ class PagerDutyClient:
             
             return None
         except Exception as e:
-            logger.error(f"Failed to get service ID for {service_name}: {e}")
+            self.logger.error(f"Failed to get service ID for {service_name}: {e}")
             return None
     
     def get_incidents(
@@ -207,12 +177,12 @@ class PagerDutyClient:
                 if sid:
                     service_ids.append(sid)
                 else:
-                    logger.warning(f"Service not found: {name}")
+                    self.logger.warning(f"Service not found: {name}")
             
             if service_ids:
                 params["service_ids[]"] = service_ids
             else:
-                logger.warning("No valid service IDs found")
+                self.logger.warning("No valid service IDs found")
                 return []
         
         incidents = self._paginated_request("incidents", params)
@@ -238,7 +208,7 @@ class PagerDutyClient:
         since = monday.isoformat() + "Z"
         until = next_monday.isoformat() + "Z"
         
-        logger.info(f"Querying incidents from {since} to {until}")
+        self.logger.info(f"Querying incidents from {since} to {until}")
         
         service_names = service_names or self.config.default_services
         
@@ -263,24 +233,12 @@ class PagerDutyClient:
     def get_services(self) -> List[Dict]:
         """Get all services"""
         return self._paginated_request("services")
-    
-    def health_check(self) -> bool:
-        """Health check - verify API connectivity"""
-        try:
-            response_data = self._request("services", {"limit": 1})
-            return "services" in response_data
-        except Exception as e:
-            logger.error(f"Health check failed: {e}")
-            return False
 
 
-# Global singleton instance
-_pagerduty_client_instance: Optional[PagerDutyClient] = None
-
-
+# Singleton functions using generic factory  
 def get_pagerduty_client(config: Optional[PagerDutyConfig] = None) -> PagerDutyClient:
     """
-    Get PagerDuty client singleton
+    Get PagerDuty client singleton using factory pattern
     
     Args:
         config: Optional configuration, only takes effect on first call
@@ -288,19 +246,12 @@ def get_pagerduty_client(config: Optional[PagerDutyConfig] = None) -> PagerDutyC
     Returns:
         PagerDutyClient instance
     """
-    global _pagerduty_client_instance
-    
-    if _pagerduty_client_instance is None:
-        _pagerduty_client_instance = PagerDutyClient(config)
-        logger.info("Created new PagerDuty client instance")
-    
-    return _pagerduty_client_instance
+    return ClientSingleton.get_client(PagerDutyClient, config)
 
 
 def reset_client():
     """Reset client instance (mainly for testing)"""
-    global _pagerduty_client_instance
-    _pagerduty_client_instance = None
+    ClientSingleton.reset_client(PagerDutyClient)
 
 
 # Export

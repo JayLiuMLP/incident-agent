@@ -1,90 +1,72 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Lightweight Prometheus Client
+Prometheus Client Implementation using Abstract Base Classes
 For MCP servers with singleton pattern support
 """
 
 import os
-import logging
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, List
 from dataclasses import dataclass
 
 import requests
-from dotenv import load_dotenv
 
-from ..auth.vault import get_default_vault, VaultKeys
-
-# Load environment variables
-load_dotenv()
+from ..base import BaseClientConfig, BaseAPIClient, ClientSingleton
+from ..auth.vault import VaultKeys
 
 # Constants
 PROMETHEUS_URL = "https://doordash.chronosphere.io/data/metrics/api/v1"
 
-# Configure logging
-logger = logging.getLogger('prometheus_client')
-logger.setLevel(logging.INFO)
-if not logger.handlers:
-    handler = logging.StreamHandler()
-    formatter = logging.Formatter('%(name)s - %(levelname)s - %(message)s')
-    handler.setFormatter(formatter)
-    logger.addHandler(handler)
-
-
-
 
 @dataclass
-class PrometheusConfig:
+class PrometheusConfig(BaseClientConfig):
     """Prometheus configuration class"""
+    
     url: str = PROMETHEUS_URL
     token: Optional[str] = None
     username: Optional[str] = None
     password: Optional[str] = None
     org_id: Optional[str] = None
-    timeout: int = 30
-
-    @classmethod
-    def from_vault(cls) -> 'PrometheusConfig':
-        """Create configuration from local vault"""
-        vault = get_default_vault()
-        token = vault.get(VaultKeys.PROMETHEUS_TOKEN)
-        
-        if not token:
-            # If no token in vault, try to get from environment and store it
-            token = os.environ.get("PROMETHEUS_TOKEN") or os.environ.get("CHRONOSPHERE_TOKEN")
-            if token:
-                vault.set(VaultKeys.PROMETHEUS_TOKEN, token)
-        
-        return cls(
-            url=PROMETHEUS_URL,
-            token=token,
-            org_id=os.environ.get("ORG_ID", ""),
-            timeout=int(os.environ.get("PROMETHEUS_TIMEOUT", "30"))
-        )
-
-
-class PrometheusClient:
-    """Lightweight Prometheus client"""
     
-    def __init__(self, config: Optional[PrometheusConfig] = None):
-        self.config = config or PrometheusConfig.from_vault()
-        self._validate_config()
-        
+    @property
+    def service_name(self) -> str:
+        return "Prometheus"
+    
+    @property
+    def vault_token_key(self) -> str:
+        return VaultKeys.PROMETHEUS_TOKEN
+    
+    @property
+    def env_token_keys(self) -> List[str]:
+        return ["PROMETHEUS_TOKEN", "CHRONOSPHERE_TOKEN"]
+    
+    def _set_token(self, token: Optional[str]):
+        self.token = token
+    
+    def _load_env_config(self):
+        super()._load_env_config()
+        self.org_id = os.environ.get("ORG_ID", "")
+
+
+class PrometheusClient(BaseAPIClient):
+    """Prometheus client implementation using abstract base class"""
+    
+    def _get_default_config(self) -> PrometheusConfig:
+        return PrometheusConfig.from_vault()
+    
     def _validate_config(self):
-        """Validate configuration"""
         if not self.config.url:
             raise ValueError("Prometheus URL not configured")
         if not self.config.token:
             raise ValueError("Prometheus token not found. Please set it using: from src.incident_agent.client.auth import get_default_vault, VaultKeys; get_default_vault().set(VaultKeys.PROMETHEUS_TOKEN, 'your_token')")
     
     def _get_headers(self) -> Dict[str, str]:
-        """Get request headers"""
         headers = {"Content-Type": "application/json"}
         
         if self.config.token:
             headers["Authorization"] = f"Bearer {self.config.token}"
         
-        if self.config.org_id:
+        if hasattr(self.config, 'org_id') and self.config.org_id:
             headers["X-Scope-OrgID"] = self.config.org_id
             
         return headers
@@ -96,7 +78,6 @@ class PrometheusClient:
         return None
     
     def _build_url(self, endpoint: str) -> str:
-        """Build API URL"""
         base_url = self.config.url.rstrip('/')
         
         # If URL already contains api/v1, don't add it again
@@ -105,38 +86,25 @@ class PrometheusClient:
         else:
             return f"{base_url}/api/v1/{endpoint}"
     
-    def _request(self, endpoint: str, params: Optional[Dict] = None) -> Any:
-        """Send API request"""
-        url = self._build_url(endpoint)
-        headers = self._get_headers()
-        auth = self._get_auth()
+    def _validate_response(self, result: Any) -> Any:
+        """Validate Prometheus API response"""
+        if isinstance(result, dict) and result.get("status") != "success":
+            error_msg = result.get('error', 'Unknown error')
+            self.logger.error(f"Prometheus API error: {error_msg}")
+            raise ValueError(f"Prometheus API error: {error_msg}")
         
-        try:
-            logger.debug(f"Requesting Prometheus API: {endpoint}")
-            
-            response = requests.get(
-                url, 
-                params=params, 
-                headers=headers, 
-                auth=auth,
-                timeout=self.config.timeout
-            )
-            
-            response.raise_for_status()
-            
-            result = response.json()
-            
-            if result.get("status") != "success":
-                error_msg = result.get('error', 'Unknown error')
-                logger.error(f"Prometheus API error: {error_msg}")
-                raise ValueError(f"Prometheus API error: {error_msg}")
-            
-            return result["data"]
-            
-        except requests.exceptions.RequestException as e:
-            logger.error(f"Prometheus API request failed: {e}")
-            raise
+        return result.get("data") if isinstance(result, dict) and "data" in result else result
     
+    def health_check(self) -> bool:
+        """Health check - test API connectivity"""
+        try:
+            result = self.query("vector(1)")
+            return result.get("resultType") == "vector"
+        except Exception as e:
+            self.logger.error(f"Health check failed: {e}")
+            return False
+    
+    # Prometheus-specific methods
     def query(self, query: str, time: Optional[str] = None) -> Dict[str, Any]:
         """
         Execute instant query
@@ -189,41 +157,12 @@ class PrometheusClient:
     def get_targets(self) -> Dict[str, Any]:
         """Get scrape target information"""
         return self._request("targets")
-    
-    def health_check(self) -> bool:
-        """Health check"""
-        try:
-            # Use simple health check, only test API connectivity
-            url = self._build_url("query")
-            headers = self._get_headers()
-            auth = self._get_auth()
-            
-            # Use a simple query to test connection
-            response = requests.get(
-                url,
-                params={"query": "vector(1)"},  # Simple constant query
-                headers=headers,
-                auth=auth,
-                timeout=self.config.timeout
-            )
-            
-            if response.status_code == 200:
-                result = response.json()
-                return result.get("status") == "success"
-            
-            return False
-        except Exception as e:
-            logger.error(f"Health check failed: {e}")
-            return False
 
 
-# Global singleton instance
-_prometheus_client_instance: Optional[PrometheusClient] = None
-
-
+# Singleton functions using generic factory
 def get_prometheus_client(config: Optional[PrometheusConfig] = None) -> PrometheusClient:
     """
-    Get Prometheus client singleton
+    Get Prometheus client singleton using factory pattern
     
     Args:
         config: Optional configuration, only takes effect on first call
@@ -231,19 +170,12 @@ def get_prometheus_client(config: Optional[PrometheusConfig] = None) -> Promethe
     Returns:
         PrometheusClient instance
     """
-    global _prometheus_client_instance
-    
-    if _prometheus_client_instance is None:
-        _prometheus_client_instance = PrometheusClient(config)
-        logger.info("Created new Prometheus client instance")
-    
-    return _prometheus_client_instance
+    return ClientSingleton.get_client(PrometheusClient, config)
 
 
 def reset_client():
     """Reset client instance (mainly for testing)"""
-    global _prometheus_client_instance
-    _prometheus_client_instance = None
+    ClientSingleton.reset_client(PrometheusClient)
 
 
 # Export
