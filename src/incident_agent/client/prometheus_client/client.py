@@ -13,7 +13,7 @@ from dataclasses import dataclass
 import requests
 from dotenv import load_dotenv
 
-from .auth.vault import get_default_vault, VaultKeys
+from ..auth.vault import get_default_vault, VaultKeys
 
 # Load environment variables
 load_dotenv()

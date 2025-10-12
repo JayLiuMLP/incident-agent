@@ -11,6 +11,13 @@ from .prometheus_client import (
     reset_client
 )
 
+from .pagerduty_client import (
+    PagerDutyConfig,
+    PagerDutyClient,
+    get_pagerduty_client,
+    reset_client as reset_pagerduty_client
+)
+
 from .auth.vault import (
     LocalVault,
     get_default_vault,
@@ -25,6 +32,10 @@ __all__ = [
     "PrometheusClient",
     "get_prometheus_client",
     "reset_client",
+    "PagerDutyConfig",
+    "PagerDutyClient", 
+    "get_pagerduty_client",
+    "reset_pagerduty_client",
     "LocalVault",
     "get_default_vault",
     "get_token", 

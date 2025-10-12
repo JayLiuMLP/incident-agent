@@ -7,8 +7,8 @@ Prometheus Client Usage Examples
 import os
 from typing import Dict, Any
 
-from .prometheus_client import get_prometheus_client, PrometheusConfig
-from .auth.vault import get_default_vault, VaultKeys
+from .client import get_prometheus_client, PrometheusConfig
+from ..auth.vault import get_default_vault, VaultKeys
 
 
 def example_basic_usage():

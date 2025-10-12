@@ -176,6 +176,7 @@ class VaultKeys:
     GITHUB_TOKEN = "github_token"
     OPENAI_API_KEY = "openai_api_key"
     ANTHROPIC_API_KEY = "anthropic_api_key"
+    PAGERDUTY_TOKEN = "pagerduty_token"
 
 
 # Export
