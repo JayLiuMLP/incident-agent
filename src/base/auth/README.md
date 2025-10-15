@@ -15,7 +15,7 @@ This module provides secure local storage for sensitive data like API tokens and
 ### Basic Operations
 
 ```python
-from src.incident_agent.client.auth import get_default_vault, VaultKeys
+from src.base.auth import get_default_vault, VaultKeys
 
 # Get default vault instance
 vault = get_default_vault()
@@ -47,7 +47,7 @@ vault.clear()
 ### Convenience Functions
 
 ```python
-from src.incident_agent.client.auth import get_token, set_token, delete_token, VaultKeys
+from src.base.auth import get_token, set_token, delete_token, VaultKeys
 
 # Shorthand operations using default vault
 set_token(VaultKeys.PROMETHEUS_TOKEN, "your-token")
@@ -58,7 +58,7 @@ delete_token(VaultKeys.PROMETHEUS_TOKEN)
 ### Custom Vault Location
 
 ```python
-from src.incident_agent.client.auth.vault import LocalVault
+from src.base.auth.vault import LocalVault
 from pathlib import Path
 
 # Create vault in custom location
@@ -88,7 +88,7 @@ The Prometheus client automatically uses the vault for token storage:
 
 ```python
 from src.incident_agent.client import get_prometheus_client
-from src.incident_agent.client.auth import get_default_vault, VaultKeys
+from src.base.auth import get_default_vault, VaultKeys
 
 # Store token first
 vault = get_default_vault()

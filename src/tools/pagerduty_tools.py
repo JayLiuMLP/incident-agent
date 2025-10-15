@@ -6,7 +6,7 @@ from typing import Optional, List, Dict, Any
 from datetime import datetime, timedelta
 from fastmcp import Context
 
-from ..client import get_pagerduty_client
+from ..pd.client.client import get_pagerduty_client
 
 
 async def get_latest_incidents(

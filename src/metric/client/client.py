@@ -11,8 +11,11 @@ from dataclasses import dataclass
 
 import requests
 
-from ..base import BaseClientConfig, BaseAPIClient, ClientSingleton
-from ..auth.vault import VaultKeys
+import sys
+sys.path.insert(0, '/Users/zhe.liu/Projects/incident-agent/src')
+from base.client import BaseClientConfig, BaseAPIClient
+from base.singleton import ClientSingleton
+from base.auth.vault import VaultKeys
 
 # Constants
 PROMETHEUS_URL = "https://doordash.chronosphere.io/data/metrics/api/v1"
@@ -58,7 +61,7 @@ class PrometheusClient(BaseAPIClient):
         if not self.config.url:
             raise ValueError("Prometheus URL not configured")
         if not self.config.token:
-            raise ValueError("Prometheus token not found. Please set it using: from src.incident_agent.client.auth import get_default_vault, VaultKeys; get_default_vault().set(VaultKeys.PROMETHEUS_TOKEN, 'your_token')")
+            raise ValueError("Prometheus token not found. Please set it using: from src.base.auth import get_default_vault, VaultKeys; get_default_vault().set(VaultKeys.PROMETHEUS_TOKEN, 'your_token')")
     
     def _get_headers(self) -> Dict[str, str]:
         headers = {"Content-Type": "application/json"}

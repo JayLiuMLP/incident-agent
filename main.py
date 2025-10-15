@@ -2,7 +2,7 @@
 Main entry point for the Incident Agent MCP Server.
 """
 
-from src.incident_agent import create_server
+from src.server.server import create_server
 
 # Create the server instance for FastMCP CLI
 mcp = create_server()

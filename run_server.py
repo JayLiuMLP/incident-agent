@@ -5,7 +5,7 @@ Entry point script to run the Incident Agent MCP Server.
 
 import asyncio
 import sys
-from src.incident_agent.server import server
+from src.server import server
 
 
 async def main():

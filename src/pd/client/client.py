@@ -10,8 +10,11 @@ from typing import Any, Dict, List, Optional
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 
-from ..base import BaseClientConfig, BaseAPIClient, ClientSingleton
-from ..auth.vault import VaultKeys
+import sys
+sys.path.insert(0, '/Users/zhe.liu/Projects/incident-agent/src')
+from base.client import BaseClientConfig, BaseAPIClient
+from base.singleton import ClientSingleton
+from base.auth.vault import VaultKeys
 
 # Constants
 PAGERDUTY_API_HOST = "https://api.pagerduty.com"
@@ -63,7 +66,7 @@ class PagerDutyClient(BaseAPIClient):
         if not self.config.api_host:
             raise ValueError("PagerDuty API host not configured")
         if not self.config.api_key:
-            raise ValueError("PagerDuty API key not found. Please set it using: from src.incident_agent.client.auth import get_default_vault, VaultKeys; get_default_vault().set(VaultKeys.PAGERDUTY_TOKEN, 'your_token')")
+            raise ValueError("PagerDuty API key not found. Please set it using: from src.base.auth import get_default_vault, VaultKeys; get_default_vault().set(VaultKeys.PAGERDUTY_TOKEN, 'your_token')")
     
     def _get_headers(self) -> Dict[str, str]:
         return {

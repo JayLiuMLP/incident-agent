@@ -9,7 +9,7 @@ from abc import ABC, abstractmethod
 from typing import Any, Dict, Optional, List
 from dataclasses import dataclass
 
-from ..auth.vault import get_default_vault
+from .auth.vault import get_default_vault
 
 
 @dataclass

@@ -4,7 +4,7 @@ Simple test script to validate the MCP server functionality.
 """
 
 import asyncio
-from src.incident_agent import create_server
+from src.server.server import create_server
 
 
 async def test_server_functionality():
